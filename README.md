@@ -1,4 +1,3 @@
-```markdown
 # Scheduling Software
 
 This repository contains the source code and instructions for a scheduling software that manages classes, enforces classroom capacity, and sends daily notifications to tutors and parents. It includes a global timetable, individual tutor schedules, and automated reminder messages.
@@ -130,7 +129,6 @@ CREATE TABLE class_students (
   FOREIGN KEY (class_id) REFERENCES classes (id),
   FOREIGN KEY (student_id) REFERENCES students (id)
 );
-```
 
 ---
 

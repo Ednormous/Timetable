@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Manage Classes{% endblock %}
+{% block content %}
+<div class="container my-4">
+  <h2 class="mb-4">Available Classes</h2>
+  
+  <!-- Card for displaying classes -->
+  <div class="card mb-4">
+    <div class="card-header">
+      Classes List
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead class="table-dark">
+            <tr>
+              <th>Class Key</th>
+              <th>Full Name</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cls in classes %}
+              <tr>
+                <td>{{ cls.name_key }}</td>
+                <td>{{ cls.full_name }}</td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="2">No classes available.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Card for adding a new class -->
+  <div class="card">
+    <div class="card-header">
+      Add a New Class
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('admin.add_class') }}">
+        <div class="mb-3">
+          <label for="name_key" class="form-label">Class Key (e.g., Y10Eng):</label>
+          <input type="text" class="form-control" name="name_key" id="name_key" required>
+        </div>
+        <div class="mb-3">
+          <label for="full_name" class="form-label">Full Name (e.g., Year 10 English):</label>
+          <input type="text" class="form-control" name="full_name" id="full_name" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Class</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

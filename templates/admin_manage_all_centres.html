@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Manage Centres and Rooms{% endblock %}
+{% block content %}
+<h2>Manage Centres and Rooms</h2>
+
+<!-- 1) Form for adding a new centre -->
+<div style="border:1px solid #ccc; padding:10px; margin-bottom:20px;">
+  <h3>Add a New Centre</h3>
+  <form method="POST" action="{{ url_for('admin.manage_all_centres') }}">
+    <input type="hidden" name="action" value="add_centre">
+    <div class="form-group">
+      <label for="centre_name">Centre Name:</label>
+      <input type="text" class="form-control" id="centre_name" name="centre_name" placeholder="e.g. 'Centre A'" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Centre</button>
+  </form>
+</div>
+
+{% if centres %}
+  <!-- 2) Display each centre, with forms to add rooms and update capacities -->
+  {% for centre in centres %}
+    <div style="border:1px solid #ccc; padding:10px; margin-bottom:20px;">
+      <h3>{{ centre.name }}</h3>
+      
+      <!-- 2a) Form to add a new room to this centre -->
+      <form method="POST" action="{{ url_for('admin.manage_all_centres') }}" style="margin-bottom:20px;">
+        <input type="hidden" name="action" value="add_room">
+        <input type="hidden" name="centre_id" value="{{ centre.id }}">
+        <div class="form-group">
+          <label for="room_name_{{ centre.id }}">Room Name:</label>
+          <input type="text" class="form-control" name="room_name" id="room_name_{{ centre.id }}" placeholder="e.g. 'Room 1'" required>
+        </div>
+        <div class="form-group">
+          <label for="capacity_{{ centre.id }}">Capacity:</label>
+          <input type="number" class="form-control" name="capacity" id="capacity_{{ centre.id }}" placeholder="e.g. 10" required>
+        </div>
+        <button type="submit" class="btn btn-secondary">Add Room</button>
+      </form>
+
+      <!-- 2b) Existing rooms with capacity fields -->
+      {% if centre.rooms %}
+        <form method="POST" action="{{ url_for('admin.manage_all_centres') }}">
+          <input type="hidden" name="action" value="update_rooms">
+          <input type="hidden" name="centre_id" value="{{ centre.id }}">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Room Name</th>
+                <th>Current Capacity</th>
+                <th>New Capacity</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for room in centre.rooms %}
+              <tr>
+                <td>{{ room.name }}</td>
+                <td>{{ room.capacity }}</td>
+                <td>
+                  <input type="number" class="form-control" name="capacity_{{ room.id }}" value="{{ room.capacity }}">
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <button type="submit" class="btn btn-info">Update Capacities</button>
+        </form>
+      {% else %}
+        <p>No rooms found for this centre yet.</p>
+      {% endif %}
+    </div>
+  {% endfor %}
+{% else %}
+  <p>No centres available yet.</p>
+{% endif %}
+{% endblock %}

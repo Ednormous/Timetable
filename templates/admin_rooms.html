@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Manage Classrooms{% endblock %}
+{% block content %}
+<h2>Manage Classrooms</h2>
+
+{% if centres %}
+  <form method="POST" action="{{ url_for('admin.manage_rooms') }}">
+    <div class="form-group">
+      <label for="centre_id">Select Centre:</label>
+      <select name="centre_id" id="centre_id" class="form-control">
+        {% for centre in centres %}
+          <option value="{{ centre.id }}">{{ centre.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <h3>Rooms for the Selected Centre</h3>
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Room Name</th>
+          <th>Current Capacity</th>
+          <th>New Capacity</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for centre in centres %}
+          <!-- For simplicity, we show the rooms for each centre.
+               You could also have JavaScript that filters rooms by the selected centre.
+               Here, if multiple centres exist, list them all under headings. -->
+          <tr>
+            <td colspan="3"><strong>{{ centre.name }}</strong></td>
+          </tr>
+          {% for room in centre.rooms %}
+          <tr>
+            <td>{{ room.name }}</td>
+            <td>{{ room.capacity }}</td>
+            <td>
+              <input type="number" name="capacity_{{ room.id }}" class="form-control" value="{{ room.capacity }}" required>
+            </td>
+          </tr>
+          {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+    <button type="submit" class="btn btn-primary">Update Room Capacities</button>
+  </form>
+{% else %}
+  <p>No centres available. Please add a centre first.</p>
+{% endif %}
+
+{% endblock %}

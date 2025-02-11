@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Manage Users{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Manage Users</h2>
+  
+  {% for role, users in user_groups.items() %}
+    <h3 class="mt-4">{{ role|capitalize }} Users</h3>
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>First Name</th>
+          <th>Last Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Password (new)</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <form method="POST" action="{{ url_for('admin.manage_users') }}">
+            <td>
+              {{ user.id }}
+              <input type="hidden" name="user_id" value="{{ user.id }}">
+            </td>
+            <td>
+              <input type="text" class="form-control" name="first_name" value="{{ user.first_name }}" required>
+            </td>
+            <td>
+              <input type="text" class="form-control" name="last_name" value="{{ user.last_name }}" required>
+            </td>
+            <td>
+              <input type="email" class="form-control" name="email" value="{{ user.email }}" required>
+            </td>
+            <td>
+              <select class="form-control" name="role" required>
+                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                <option value="tutor" {% if user.role == 'tutor' %}selected{% endif %}>Tutor</option>
+                <option value="default" {% if user.role == 'default' %}selected{% endif %}>Default</option>
+              </select>
+            </td>
+            <td>
+              <input type="password" class="form-control" name="password" placeholder="Leave blank to keep current">
+            </td>
+            <td>
+              <button type="submit" class="btn btn-primary btn-sm">Update</button>
+            </td>
+          </form>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endfor %}
+</div>
+{% endblock %}

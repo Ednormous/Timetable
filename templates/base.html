@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Timetable System{% endblock %}</title>
+  <!-- Google Fonts: Roboto -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" 
+        integrity="sha512-Fo3rlrZj/kTc3bSjZGl6aN3Gv8af7P2RdxO/9vNP7An1Zn5R3IXRbZKZaOiKrcOyBqMYYrD0HLKfOJAPG5+ZqQ==" 
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- Animate.css (using subtle animations) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body style="font-family: 'Roboto', sans-serif;">
+  <!-- Sticky header with subtle fadeIn animation -->
+  <header class="bg-dark text-white py-3 shadow sticky-top animate__animated animate__fadeIn animate__faster">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center">
+        <h1 class="h3 mb-0"><i class="fas fa-calendar-alt me-2"></i>Timetable System</h1>
+        <nav>
+          <a href="{{ url_for('index') }}" class="text-white me-3">Home</a>
+          {% if current_user.is_authenticated %}
+            {% if current_user.role == 'admin' %}
+              <a href="{{ url_for('admin.dashboard') }}" class="text-white me-3">Admin Dashboard</a>
+              <a href="{{ url_for('admin.manage_centres') }}" class="text-white me-3">Manage Centres/Rooms</a>
+              <a href="{{ url_for('admin.manage_users') }}" class="text-white me-3">Manage Users</a>
+              <a href="{{ url_for('admin.view_classes') }}" class="text-white me-3">Classes</a>
+            {% elif current_user.role == 'tutor' %}
+              <a href="{{ url_for('tutor.dashboard') }}" class="text-white me-3">Tutor</a>
+            {% endif %}
+            <a href="{{ url_for('auth.logout') }}" class="text-white">Logout</a>
+          {% else %}
+            <a href="{{ url_for('auth.login') }}" class="text-white me-3">Login</a>
+            <a href="{{ url_for('auth.signup') }}" class="text-white">Sign Up</a>
+          {% endif %}
+        </nav>
+      </div>
+    </div>
+  </header>
+  
+  <!-- Main content container with subtle fadeIn animation -->
+  <main class="container my-4 animate__animated animate__fadeIn animate__faster">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-3">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  
+  <footer class="bg-light py-3">
+    <div class="container text-center">
+      <p class="mb-0">&copy; 2025 Your Company Name</p>
+    </div>
+  </footer>
+  
+  <!-- Bootstrap 5 JS Bundle (includes Popper) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

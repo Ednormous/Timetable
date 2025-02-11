@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Manage Centres{% endblock %}
+{% block content %}
+<div class="container my-4">
+  <h2 class="mb-4">Manage Centres</h2>
+  
+  <!-- Card for adding a new centre -->
+  <div class="card mb-4">
+    <div class="card-header">
+      Add a New Centre
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('admin.manage_centres') }}">
+        <div class="mb-3">
+          <label for="centre_name" class="form-label">New Centre Name:</label>
+          <input type="text" class="form-control" id="centre_name" name="centre_name" placeholder="Enter centre name" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Centre</button>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Card for listing existing centres -->
+  <div class="card">
+    <div class="card-header">
+      Existing Centres
+    </div>
+    <div class="card-body">
+      {% if centres %}
+        <ul class="list-group">
+          {% for centre in centres %}
+            <li class="list-group-item">
+              <a href="{{ url_for('admin.view_rooms', centre_id=centre.id) }}" class="text-decoration-none">
+                {{ centre.name }}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="mb-0">No centres available.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

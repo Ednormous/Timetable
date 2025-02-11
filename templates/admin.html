@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<h2>Global Timetable</h2>
+
+<!-- Centre and Day selectors -->
+<label for="centre-selector">Select Centre:</label>
+<select id="centre-selector">
+  {% for centre in centres %}
+    <option value="{{ centre }}">{{ centre }}</option>
+  {% endfor %}
+</select>
+
+<label for="day-selector">Select Day:</label>
+<select id="day-selector">
+  {% for day in days %}
+    <option value="{{ day }}">{{ day }}</option>
+  {% endfor %}
+</select>
+
+<!-- Button to toggle edit mode -->
+<button id="edit-button" class="btn btn-primary">Edit</button>
+<button id="save-button" class="btn btn-success" style="display: none;">Save All Changes</button>
+
+<!-- Container for the Handsontable grid -->
+<div id="timetable-container" style="width: 100%; height: 600px; margin-top: 20px;"></div>
+
+<!-- Modal for allocating classes in the timetable -->
+<div class="modal fade" id="editSlotModal" tabindex="-1" role="dialog" aria-labelledby="editSlotModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <form id="slotForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editSlotModalLabel">Allocate Class to Time Slot</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="$('#editSlotModal').modal('hide');">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Time details (read-only) -->
+          <div class="form-group">
+            <label for="startSlotTime">Start Time:</label>
+            <input type="text" class="form-control" id="startSlotTime" readonly>
+          </div>
+          <div class="form-group">
+            <label for="endSlotTime">End Time:</label>
+            <input type="text" class="form-control" id="endSlotTime" readonly>
+          </div>
+          <!-- Class selection (dropdown) -->
+          <div class="form-group">
+            <label for="classSelect">Select Class:</label>
+            <select class="form-control" id="classSelect" required>
+              <option value="">-- Select Class --</option>
+              {% for school_class in classes %}
+              <option value="{{ school_class.id }}">{{ school_class.name_key }} - {{ school_class.full_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <!-- Number of students input -->
+          <div class="form-group">
+            <label for="studentNumber">Number of Students:</label>
+            <input type="number" class="form-control" id="studentNumber" required>
+          </div>
+          <!-- Tutor selection (dropdown) -->
+          <div class="form-group">
+            <label for="tutorSelect">Select Tutor:</label>
+            <select class="form-control" id="tutorSelect" required>
+              <option value="">-- Select Tutor --</option>
+              {% for tutor in tutors %}
+              <option value="{{ tutor.id }}">{{ tutor.name }} ({{ tutor.email }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <!-- Hidden fields to store selection indices -->
+          <input type="hidden" id="cellRowStart">
+          <input type="hidden" id="cellRowEnd">
+          <input type="hidden" id="cellColStart">
+          <input type="hidden" id="cellColEnd">
+        </div>
+        <div class="modal-footer">
+          <!-- New Remove button on the left -->
+          <button type="button" class="btn btn-danger float-left" id="modalRemoveButton">Remove</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="$('#editSlotModal').modal('hide');">Cancel</button>
+          <button type="button" class="btn btn-primary" id="modalSaveButton">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- Include Handsontable assets -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@latest/dist/handsontable.full.min.css">
+<script src="https://cdn.jsdelivr.net/npm/handsontable@latest/dist/handsontable.full.min.js"></script>
+
+<!-- Include jQuery and Bootstrap JS/CSS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var timetableByCentre = {{ timetable_by_centre|safe }};
+    var centreSelector = document.getElementById('centre-selector');
+    var daySelector = document.getElementById('day-selector');
+    var editButton = document.getElementById('edit-button');
+    var saveButton = document.getElementById('save-button');
+    var container = document.getElementById('timetable-container');
+    var hot;
+    var isEditable = false;
+    
+    function renderTable() {
+        var centre = centreSelector.value;
+        var day = daySelector.value;
+        var data = timetableByCentre[centre][day];
+        if (hot) {
+            hot.destroy();
+        }
+        hot = new Handsontable(container, {
+            data: data,
+            colHeaders: false,
+            rowHeaders: true,
+            contextMenu: true,
+            readOnly: !isEditable,
+            licenseKey: 'non-commercial-and-evaluation',
+            // Make header (row 0) and first column (col 0) always read-only.
+            cells: function(row, col) {
+                if (row === 0 || col === 0) {
+                    return { readOnly: true };
+                }
+            },
+            afterSelectionEnd: function(r, c, r2, c2) {
+                if (!isEditable) return;
+                // Do not trigger if the selection starts on header row or first column.
+                if (r === 0 || c === 0) return;
+                // Save selection indices.
+                document.getElementById('cellRowStart').value = r;
+                document.getElementById('cellRowEnd').value = r2;
+                document.getElementById('cellColStart').value = c;
+                document.getElementById('cellColEnd').value = c2;
+                
+                // Get start and end time from the first column.
+                var startCellText = hot.getDataAtCell(r, 0);
+                var endCellText = hot.getDataAtCell(r2, 0);
+                var startParts = startCellText.split(" - ");
+                var endParts = endCellText.split(" - ");
+                document.getElementById('startSlotTime').value = startParts[0].trim();
+                document.getElementById('endSlotTime').value = (endParts.length > 1 ? endParts[1].trim() : startParts[1].trim());
+                
+                // Show modal and set focus on the class selection dropdown.
+                $('#editSlotModal').modal('show').on('shown.bs.modal', function () {
+                    $('#classSelect').focus();
+                });
+            }
+        });
+    }
+    
+    renderTable();
+    centreSelector.addEventListener('change', renderTable);
+    daySelector.addEventListener('change', renderTable);
+    
+    editButton.addEventListener('click', function() {
+        isEditable = true;
+        hot.updateSettings({ readOnly: false });
+        editButton.style.display = 'none';
+        saveButton.style.display = 'inline';
+    });
+    
+    document.getElementById('modalSaveButton').addEventListener('click', function() {
+        // Retrieve selected values from modal.
+        var selectedClassId = $('#classSelect').val();
+        if (!selectedClassId) {
+            alert("Please select a class.");
+            return;
+        }
+        var selectedClassText = $('#classSelect option:selected').text();
+        var studentNumber = $('#studentNumber').val();
+        if (!studentNumber) {
+            alert("Please enter the number of students.");
+            return;
+        }
+        var selectedTutorId = $('#tutorSelect').val();
+        if (!selectedTutorId) {
+            alert("Please select a tutor.");
+            return;
+        }
+        var selectedTutorText = $('#tutorSelect option:selected').text();
+        
+        // Construct the display string.
+        var displayStr = "Class: " + selectedClassText + " | Students: " + studentNumber + " | Tutor: " + selectedTutorText;
+        
+        // Retrieve selection indices.
+        var rowStart = parseInt($('#cellRowStart').val(), 10);
+        var rowEnd = parseInt($('#cellRowEnd').val(), 10);
+        var colStart = parseInt($('#cellColStart').val(), 10);
+        var colEnd = parseInt($('#cellColEnd').val(), 10);
+        
+        // Update all selected cells with the display string.
+        for (var i = rowStart; i <= rowEnd; i++) {
+            for (var j = colStart; j <= colEnd; j++) {
+                hot.setDataAtCell(i, j, displayStr);
+            }
+        }
+        
+        $('#editSlotModal').modal('hide');
+        $('#slotForm')[0].reset();
+    });
+    
+    // New event listener for the Remove button.
+    document.getElementById('modalRemoveButton').addEventListener('click', function() {
+        // Retrieve selection indices.
+        var rowStart = parseInt($('#cellRowStart').val(), 10);
+        var rowEnd = parseInt($('#cellRowEnd').val(), 10);
+        var colStart = parseInt($('#cellColStart').val(), 10);
+        var colEnd = parseInt($('#cellColEnd').val(), 10);
+        
+        // Clear all selected cells.
+        for (var i = rowStart; i <= rowEnd; i++) {
+            for (var j = colStart; j <= colEnd; j++) {
+                hot.setDataAtCell(i, j, "");
+            }
+        }
+        
+        $('#editSlotModal').modal('hide');
+        $('#slotForm')[0].reset();
+    });
+    
+    saveButton.addEventListener('click', function() {
+        var centre = centreSelector.value;
+        var day = daySelector.value;
+        var updatedData = hot.getData();
+        timetableByCentre[centre][day] = updatedData;
+        fetch('/admin/save_timetable', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ centre: centre, day: day, data: updatedData })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if(result.status === 'success') {
+                alert("Timetable saved successfully!");
+                isEditable = false;
+                hot.updateSettings({ readOnly: true });
+                saveButton.style.display = 'none';
+                editButton.style.display = 'inline';
+            } else {
+                alert("Error saving timetable: " + result.message);
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("Error saving timetable.");
+        });
+    });
+});
+</script>
+{% endblock %}
